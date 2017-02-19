@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -95,18 +95,6 @@ module.exports = g;
 
 /***/ }),
 /* 1 */
-/***/ (function(module, exports) {
-
-
-class MazeMessage {
-    constructor(text) {
-        if (text) {
-        }
-    }
-}
-
-/***/ }),
-/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, module) {var __WEBPACK_AMD_DEFINE_RESULT__;/**
@@ -17195,10 +17183,10 @@ class MazeMessage {
   }
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0), __webpack_require__(5)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0), __webpack_require__(4)(module)))
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25771,10 +25759,10 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4), __webpack_require__(0)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3), __webpack_require__(0)))
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -25960,7 +25948,7 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -25988,50 +25976,89 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lodash__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lodash__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lodash___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_lodash__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue__ = __webpack_require__(2);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_vue__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mazecommon_js__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mazecommon_js__ = __webpack_require__(6);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mazecommon_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__mazecommon_js__);
 
 
 
 
+
+const NumLeds = 9;
+const BytesPerLed = 3;
+
 var app = new __WEBPACK_IMPORTED_MODULE_1_vue___default.a({
   el: '#app',
   data: {
-    messageText: '{}'
+    messageText: '{}',
+    messageLog: [],
+    ledColorValues: new Uint8Array(NumLeds * BytesPerLed)
   },
   methods: {
-    sendMessage: function () {},
-    leftButton: function () {},
-    upButton: function () {},
-    downButton: function () {},
-    rightButton: function () {},
+    sendMessage: function () {
+      sendMessage(app.messageText);
+    },
+    leftButton: function () { sendMove('west'); },
+    upButton: function () { sendMove('north');},
+    downButton: function () { sendMove('south');},
+    rightButton: function () { sendMove('east');},
     aButton: function () {},
     bButton: function () {},
+    getLedColorValue: function(ledIndex) {
+      var r = this.ledColorValues[ledIndex + 0];
+      var g = this.ledColorValues[ledIndex + 1];
+      var b = this.ledColorValues[ledIndex + 2];
+      return "#" + r.toString(16) + g.toString(16) + b.toString(16);
+    },
+    scrollMessageBottom: function () {
+      var body = document.body;
+      body.scrollTop = body.scrollHeight;
+    }
   }
 })
 
+function logMessage(message, from) {
+  app.messageLog.push({ message, from });
+  setTimeout(app.scrollMessageBottom, 1); // do this after the item is inserted
+}
 
+// web socket setup
 const socket = new WebSocket('ws://' + window.location.host);
 
+function sendMessage(message) {  // send message and log it
+  app.messageText = message;
+  socket.send(message);
+  logMessage(message, 'client');
+}
+
 // Connection opened
-socket.addEventListener('open', function (event) {
-    socket.send('Hello Server!');
+socket.addEventListener('open', function (event) { 
+
 });
 
 // Listen for messages
 socket.addEventListener('message', function (event) {
     console.log('Message from server', event.data);
-    messageText += event.data + '\n';    
+    logMessage(event.data, 'cloud');
 });
+
+function sendMove(direction) {
+  sendMessage({action: 'move', direction});
+}
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports) {
+
+
 
 /***/ })
 /******/ ]);

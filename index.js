@@ -1,9 +1,13 @@
+/*jslint es6 */
+"use strict";
 const express = require('express');
 const app = express();
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-const debug = require('debug');
+const debug = require('debug')('mazeserver');   
+// set Debug env variable to * or mazeserver to see messages
+// powershell: $Env:debug = "*"
 const cfg = require('./config.json');
 const mazeCommon = require('./mazecommon');
 
@@ -20,25 +24,51 @@ const server = http.createServer(app);
 
 // Set up Sockets
 const wss = new WebSocket.Server({ server });
-var activeClients = [];
+var activeClients = new Map();
+
+var nextClientID = 1;
 
 wss.on('connection', (ws) => {
     var req = ws.request;
-    debug('client connected');
+    var thisClientId = nextClientID++;
+    debug('client connected, ID ', thisClientId);
     var client = {
       ws: ws
     };
-    activeClients.push(client)
+    activeClients.set(thisClientId, client);
+    debug(activeClients.size, 'clients connected');
+    ws.send(JSON.stringify({message: 'Welcome! You are client ' + thisClientId }));
 
     ws.on('message', function incoming(message) {
-      console.log('received: %s', message);
+      debug('received from client %d: %s', thisClientId, message);
     });
 
     ws.on('disconnect', () => {
-        debug('client disconnected');
+        debug('client %d disconnected', thisClientId);
+        activeClients.delete(thisClientId);
     });
 });
 
 server.listen(port, function listening() {
-  console.log('Listening on %d', server.address().port);
+  debug('Listening on %d', server.address().port);
 });
+
+// send a message to all clients
+function broadcast(message) {
+  if ((typeof message) === 'object') {
+    message = JSON.stringify(message);
+  }
+  activeClients.forEach(function(client, key) {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(message);
+    }
+  });
+}
+
+var tickCounter = 0;
+// set up game timer
+setInterval(() => {
+  debug('game timer tick');
+  broadcast({ message: 'game tick ' + tickCounter});
+  tickCounter++;
+}, 3000);  

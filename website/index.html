@@ -6,28 +6,53 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; height: 80px; }
       form input { border: 0; padding: 10px; width: 50%; margin-right: .5%; }
       form button.send { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
       form button.device { width: 30px; height: 30px; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages { list-style-type: none; margin: 0; padding: 0; margin-bottom: 80px;}
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
+      .ledBox { float: right; background: #303; padding: 5px; border: 1px solid #fff; }
+      .ledBox .led { display: inline-block; width: 15px; height: 15px; border: 1px solid #fff;}
     </style>
   </head>
-  <body>
-    <div  id=app>
-      <ul id="messages"></ul>
+  <body> 
+    <div id=app>
+      <ul id="messages">
+        <li v-for="logMessage in messageLog">
+          <span v-if="logMessage.from === 'client'"> 💻 →	☁  </span>
+          <span v-if="logMessage.from === 'cloud'" > 💻 ←	☁  </span>
+          <span class=body>{{ logMessage.message }}</span>
+        </li>
+      </ul>
       <form action="">
         <input autocomplete="off"  v-model="messageText"/>
-        <button  type="button" class="send">Send</button>
+        <button  type="button" class="send" v-on:click="sendMessage">Send</button>
         <button  type="button" class="device" v-on:click="leftButton">&#8592;</button>
         <button  type="button" class="device" v-on:click="upButton">&#8593;</button>
         <button  type="button" class="device" v-on:click="downButton">&#8595;</button>
         <button  type="button" class="device" v-on:click="rightButton">&#8594;;</button>
         <button  type="button" class="device" v-on:click="aButton">A</button>
-        <button  type="button" class="device" v-on:click="bButton">B</button>
+        <button  type="button" class="device" v-on:click="bButton">B</button>    
         
+        <div class=ledBox>
+          <div class=row>
+            <div class=led v-bind:style="{ background: getLedColorValue(0) }"> </div>
+            <div class=led v-bind:style="{ background: getLedColorValue(1) }"> </div>
+            <div class=led v-bind:style="{ background: getLedColorValue(2) }"> </div>
+          </div>
+          <div class=row>
+            <div class=led v-bind:style="{ background: getLedColorValue(3) }"></div>
+            <div class=led v-bind:style="{ background: getLedColorValue(4) }"></div>
+            <div class=led v-bind:style="{ background: getLedColorValue(5) }"></div>
+          </div>
+          <div class=row>
+            <div class=led v-bind:style="{ background: getLedColorValue(6) }"></div>
+            <div class=led v-bind:style="{ background: getLedColorValue(7) }"></div>
+            <div class=led v-bind:style="{ background: getLedColorValue(8) }"></div>
+          </div>
+        </div>
       </form>
     </div>
     <script src="bundle.js"></script>
