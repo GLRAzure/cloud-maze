@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -95,6 +95,12 @@ module.exports = g;
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, module) {var __WEBPACK_AMD_DEFINE_RESULT__;/**
@@ -17183,10 +17189,10 @@ module.exports = g;
   }
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0), __webpack_require__(4)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0), __webpack_require__(5)(module)))
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25759,10 +25765,10 @@ Vue$3.compile = compileToFunctions;
 
 module.exports = Vue$3;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3), __webpack_require__(0)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4), __webpack_require__(0)))
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -25948,7 +25954,7 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -25976,16 +25982,16 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lodash__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lodash__ = __webpack_require__(2);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_lodash___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_lodash__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_vue__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mazecommon_js__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mazecommon_js__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mazecommon_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__mazecommon_js__);
 
 
@@ -25994,6 +26000,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 const NumLeds = 9;
 const BytesPerLed = 3;
+
+
 
 var app = new __WEBPACK_IMPORTED_MODULE_1_vue___default.a({
   el: '#app',
@@ -26013,10 +26021,11 @@ var app = new __WEBPACK_IMPORTED_MODULE_1_vue___default.a({
     aButton: function () {},
     bButton: function () {},
     getLedColorValue: function(ledIndex) {
-      var r = this.ledColorValues[ledIndex + 0];
-      var g = this.ledColorValues[ledIndex + 1];
-      var b = this.ledColorValues[ledIndex + 2];
-      return "#" + r.toString(16) + g.toString(16) + b.toString(16);
+      var ledArrayOffset = ledIndex * BytesPerLed;
+      var r = this.ledColorValues[ledArrayOffset + 0];
+      var g = this.ledColorValues[ledArrayOffset + 1];
+      var b = this.ledColorValues[ledArrayOffset + 2];
+      return "#" + ("0" + r.toString(16)).substr(-2) + ("0" + g.toString(16)).substr(-2) + ("0" + b.toString(16)).substr(-2);
     },
     scrollMessageBottom: function () {
       var body = document.body;
@@ -26034,6 +26043,10 @@ function logMessage(message, from) {
 const socket = new WebSocket('ws://' + window.location.host);
 
 function sendMessage(message) {  // send message and log it
+  if (typeof message != 'string')
+  {
+    message = JSON.stringify(message)
+  }
   app.messageText = message;
   socket.send(message);
   logMessage(message, 'client');
@@ -26054,11 +26067,15 @@ function sendMove(direction) {
   sendMessage({action: 'move', direction});
 }
 
-/***/ }),
-/* 6 */
-/***/ (function(module, exports) {
+function setLedColor(ledIndex, r, g, b) {
+  var ledArrayOffset = ledIndex * BytesPerLed;
+  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 0, r);
+  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 1, g);
+  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 2, b);
+}
 
-
+setLedColor(1,255,0,255);
+setLedColor(4,255,255,255);
 
 /***/ })
 /******/ ]);

@@ -6,6 +6,8 @@ import mazecommon from '../mazecommon.js';
 const NumLeds = 9;
 const BytesPerLed = 3;
 
+
+
 var app = new Vue({
   el: '#app',
   data: {
@@ -24,10 +26,11 @@ var app = new Vue({
     aButton: function () {},
     bButton: function () {},
     getLedColorValue: function(ledIndex) {
-      var r = this.ledColorValues[ledIndex + 0];
-      var g = this.ledColorValues[ledIndex + 1];
-      var b = this.ledColorValues[ledIndex + 2];
-      return "#" + r.toString(16) + g.toString(16) + b.toString(16);
+      var ledArrayOffset = ledIndex * BytesPerLed;
+      var r = this.ledColorValues[ledArrayOffset + 0];
+      var g = this.ledColorValues[ledArrayOffset + 1];
+      var b = this.ledColorValues[ledArrayOffset + 2];
+      return "#" + ("0" + r.toString(16)).substr(-2) + ("0" + g.toString(16)).substr(-2) + ("0" + b.toString(16)).substr(-2);
     },
     scrollMessageBottom: function () {
       var body = document.body;
@@ -45,6 +48,10 @@ function logMessage(message, from) {
 const socket = new WebSocket('ws://' + window.location.host);
 
 function sendMessage(message) {  // send message and log it
+  if (typeof message != 'string')
+  {
+    message = JSON.stringify(message)
+  }
   app.messageText = message;
   socket.send(message);
   logMessage(message, 'client');
@@ -64,3 +71,13 @@ socket.addEventListener('message', function (event) {
 function sendMove(direction) {
   sendMessage({action: 'move', direction});
 }
+
+function setLedColor(ledIndex, r, g, b) {
+  var ledArrayOffset = ledIndex * BytesPerLed;
+  Vue.set(app.ledColorValues, ledArrayOffset + 0, r);
+  Vue.set(app.ledColorValues, ledArrayOffset + 1, g);
+  Vue.set(app.ledColorValues, ledArrayOffset + 2, b);
+}
+
+setLedColor(1,255,0,255);
+setLedColor(4,255,255,255);
