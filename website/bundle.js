@@ -26034,6 +26034,22 @@ var app = new __WEBPACK_IMPORTED_MODULE_1_vue___default.a({
   }
 })
 
+
+// accepts r, g, b or an arry of [r, g, b ]
+function setLedColor(ledIndex, r, g, b) {
+  var ledArrayOffset = ledIndex * BytesPerLed;
+  if (Array.isArray(r)) {
+    var arr = r;
+    r = arr[0];
+    g = arr[1];
+    b = arr[2];
+  }
+  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 0, r);
+  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 1, g);
+  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 2, b);
+}
+
+
 function logMessage(message, from) {
   app.messageLog.push({ message, from });
   setTimeout(app.scrollMessageBottom, 1); // do this after the item is inserted
@@ -26052,26 +26068,45 @@ function sendMessage(message) {  // send message and log it
   logMessage(message, 'client');
 }
 
+function mapSurroundingsValueToColor(char) {
+  switch (char) {
+    case ' ': return [0,0,0];
+    case 'w': return [255,255,255];
+    case 'p': return [0,0,255];
+    case 'c': return [0,255,0];
+  }
+}
+
 // Connection opened
 socket.addEventListener('open', function (event) { 
-
+ 
 });
+
+function processWorldUpdate(message) {
+ var surroundings = message.surroundings;
+  if (surroundings) {
+    for(var index = 0; index < surroundings.length; index++)
+    {
+      var val = surroundings[index];
+      setLedColor(index, mapSurroundingsValueToColor(val));
+    }
+  }
+}
 
 // Listen for messages
 socket.addEventListener('message', function (event) {
     console.log('Message from server', event.data);
     logMessage(event.data, 'cloud');
+    var message = JSON.parse(event.data);
+    switch (message.type) {
+      case 'world-update':
+        processWorldUpdate(message)
+        break;
+    }
 });
 
 function sendMove(direction) {
   sendMessage({action: 'move', direction});
-}
-
-function setLedColor(ledIndex, r, g, b) {
-  var ledArrayOffset = ledIndex * BytesPerLed;
-  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 0, r);
-  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 1, g);
-  __WEBPACK_IMPORTED_MODULE_1_vue___default.a.set(app.ledColorValues, ledArrayOffset + 2, b);
 }
 
 setLedColor(1,255,0,255);

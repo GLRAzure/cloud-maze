@@ -16,7 +16,7 @@ process.title = 'cloud-maze'
 
 const port = process.env.CLOUDMAZE_PORT || 3001;
 
-var world = new GameWorld(100,100);
+var world = new GameWorld(10, 10);
 
 // set up webserver
 app.get('/', function(req, res){
@@ -32,47 +32,47 @@ var activeClients = new Map();
 var nextClientID = 1;
 
 wss.on('connection', (ws) => {
-    var req = ws.request;
-    var thisClientId = nextClientID++;
-    debug('client connected, ID ', thisClientId);
-    var name = 'anonymous ' + thisClientId;
-    var client = {
-      ws,
-      name,    
-      player: world.addPlayer(name)
-    };
-    
-    client.sendMessage = function(body) {
-      ws.send(JSON.stringify(body));
+  var deviceKey = ws.protocol;   // TODO: use to reconnect a client to an existing session
+  var req = ws.request;
+  var thisClientId = nextClientID++;
+  debug('client connected, ID ', thisClientId);
+  var name = 'anonymous ' + thisClientId;
+  var client = {
+    ws,
+    name,    
+    player: world.addPlayer(name)
+  };
+  
+  client.sendMessage = function(body) {
+    ws.send(JSON.stringify(body));
+  }
+
+  activeClients.set(thisClientId, client);
+  debug(activeClients.size, 'clients connected');
+  // ws.send(JSON.stringify({message: 'Welcome! You are client ' + name }));
+
+  ws.on('message', function incoming(messageText) {
+    debug("received from client '%s': %s", name, messageText);
+    var message;
+    try {
+      message = JSON.parse(messageText);
     }
+    catch (err) {
+      debug("unrecognized/non-JSON message from client '%s': '%s' ", name, messageText);
 
-    activeClients.set(thisClientId, client);
-    debug(activeClients.size, 'clients connected');
-    ws.send(JSON.stringify({message: 'Welcome! You are client ' + name }));
+    }
+    switch(message.action) {
+      case 'move':
+        debug('player ' + name + ' moving ' + message.direction);
+        client.player.move(message.direction);
+        break;
+    }
+  });
 
-    ws.on('message', function incoming(messageText) {
-      debug("received from client '%s': %s", name, messageText);
-      var message;
-      try {
-        message = JSON.parse(messageText);
-      }
-      catch (err) {
-        debug("unrecognized/non-JSON message from client '%s': '%s' ", name, messageText);
-
-      }
-      switch(message.action) {
-        case 'move':
-          debug('player ' + name + ' moving ' + message.direction);
-          client.player.move(message.direction);
-          break;
-      }
-    });
-
-    ws.on('disconnect', () => {
-        debug('client %d disconnected', thisClientId);
-        activeClients.delete(thisClientId);
-    });
-
+  ws.on('disconnect', () => {
+      debug('client %d disconnected', thisClientId);
+      activeClients.delete(thisClientId);
+  });
 });
 
 server.listen(port, function listening() {
@@ -110,7 +110,7 @@ function buildSurroundingsMap(player, world) {
 // set up game timer
 setInterval(() => {
   var clientList = activeClients.values();
-  debug('game timer tick. clients connected: ' + activeClients.size);
+  // debug('game timer tick. clients connected: ' + activeClients.size);
   // broadcast({ message: 'game time: ' + world.time});
   world.tick();
   activeClients.forEach(function (client, key) {
@@ -125,7 +125,7 @@ setInterval(() => {
       pos_x: client.player.x,
       pos_y: client.player.y,
       player_count: world.players.size,
-      surroundings: buildSurroundingsMap(client.player, world)  // 'w cwp ww '   // w: wall, (space): empty, p: player, c: chest
+      surroundings: buildSurroundingsMap(client.player, world)  // w: wall, (space): empty, p: player, c: chest
     };
     // surpress world updates if nothing has changed
     var worldUpdateMessageJson = JSON.stringify(worldUpdateMessage);
