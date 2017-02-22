@@ -28,11 +28,12 @@ const server = http.createServer(app);
 // Set up Sockets
 const wss = new WebSocket.Server({ server });
 var activeClients = new Map();
+var overwatchClients = new Set();
 
 var nextClientID = 1;
 
-wss.on('connection', (ws) => {
-  var deviceKey = ws.protocol;   // TODO: use to reconnect a client to an existing session
+function createPlayerClient(ws) {
+
   var req = ws.request;
   var thisClientId = nextClientID++;
   debug('client connected, ID ', thisClientId);
@@ -73,6 +74,23 @@ wss.on('connection', (ws) => {
       debug('client %d disconnected', thisClientId);
       activeClients.delete(thisClientId);
   });
+}
+
+function createOverwatchClient(ws) {
+  var thisOwClient = {
+    ws
+  };
+
+  overwatchClients.add(thisOwClient);
+}
+
+wss.on('connection', (ws) => {
+  var deviceKey = ws.protocol;   // TODO: use to reconnect a client to an existing session
+  if (/$overwatch/.test(deviceKey)) {
+    createOverwatchClient(ws);
+  } else {  // default to a player client
+    createPlayerClient(ws);
+  }
 });
 
 server.listen(port, function listening() {
