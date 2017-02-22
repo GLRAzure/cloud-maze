@@ -4,8 +4,8 @@
   "description": "Live realtime multiplayer maze game for IOT devices",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "node index.js"
+    "start": "node index.js",
+    "docker-build": "docker build -t andrejk/cloud-maze ."
   },
   "repository": {
     "type": "git",
