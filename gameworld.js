@@ -10,6 +10,7 @@ class MapSquare {
   constructor(world,x,y) {
     this.world = world;
     this.position = [x, y];
+    this.type = 'empty';
   }
 }
 
@@ -35,18 +36,54 @@ class GamePlayer {
   }
 }
 
+class DefaultLayoutBuilder {
+  constructor(world) {
+    this.world = world;
+  }
+  neighborList(square) {
+    var list = [[-2,0],[0,-2],[2,0],[0,2]]
+      .map(GameWorld.transformCoords(square.coords))
+      .filter((sq) => world.isInBounds(sq)); // remove out of bounds
+    return list;
+  }
+  buildLayout() {
+    // fill the world with walls
+    for(var sq of this.world.iterateMap()) {
+      sq.type = 'empty';
+    }
+
+  }
+}
+
 class GameWorld {
   constructor(height, width) {
     this.height = height;
     this.width = width;
     this.time = 0;
     this.players = new Set();
+    this.layoutBuilder = new DefaultLayoutBuilder(this);
     this.buildMap();
   }
 
   // offsets coordiate a by relative value b (returning a new value)
   static transformCoords(a, b) {
-    return [a[0] + b[0],a[1] + b[1]];
+    if (!b) { // return a closure if only a first parameter was specified
+      return function (c) { return transformCoords(a, c); };
+    } else {
+      return [a[0] + b[0],a[1] + b[1]];
+    }
+  }
+
+  isInBounds(coords) { // return true if coords is in the bounds of this map
+    return ((coords[0] >= 0 && coords[0] < this.width) && (coords[1] >= 0 && coords[1] < this.height));
+  }
+
+  *iterateMap() {
+    for (var y = 0; y < this.height; y++) {
+      for (var x = 0; x < this.width; x++) {
+        yield this.map[x][y];
+      }
+    }
   }
 
   buildMap() {
@@ -59,6 +96,8 @@ class GameWorld {
         thisRow.push(thisSquare);
       }
     }
+    this.layoutBuilder.buildLayout();
+
   }
 
   getWorldSquare(coords) {
