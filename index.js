@@ -14,7 +14,7 @@ const { GameWorld } = require('./gameworld.js');
 
 process.title = 'cloud-maze'
 
-const port = process.env.CLOUDMAZE_PORT || 3001;
+const port = process.env.CLOUDMAZE_PORT || process.env.PORT || 3001;
 
 var world = new GameWorld(10, 10);
 
