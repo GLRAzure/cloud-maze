@@ -20,10 +20,19 @@ class GamePlayer {
   constructor(world, name) {
     this.world = world;
     this.name = name;
-    this.actionQueue = [];
-    var x = Math.floor(Math.random() * world.width); // random placement
-    var y = Math.floor(Math.random() * world.height);
-    this.position = [x,y];
+    this.actionQueue = [];   
+    this.randomlyPlace(); 
+  }
+
+  randomlyPlace() {
+    var sq;
+    do {
+    var pos = [
+      Math.floor(Math.random() * this.world.width), // random placement
+      Math.floor(Math.random() * this.world.height)];
+      sq = this.world.getSquare(pos);
+    } while (sq.type != 'empty')
+    this.position = sq.position;
   }
 
   get x() { return this.position[0]; }
