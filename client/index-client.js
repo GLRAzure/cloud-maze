@@ -37,7 +37,7 @@ var app = new Vue({
       body.scrollTop = body.scrollHeight;
     }
   }
-})
+});
 
 
 // accepts r, g, b or an arry of [r, g, b ]

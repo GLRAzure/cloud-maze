@@ -16,11 +16,12 @@ process.title = 'cloud-maze'
 
 const port = process.env.CLOUDMAZE_PORT || process.env.PORT || 3001;
 
-var world = new GameWorld(10, 10);
+var world = new GameWorld(64, 32);
 
 // set up webserver
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/website/index.html');
+  res.sendFile(__dirname + '/website/overwatch.html');
 });
 app.use(express.static(path.join(__dirname, 'website')));
 const server = http.createServer(app);
@@ -78,15 +79,59 @@ function createPlayerClient(ws) {
 
 function createOverwatchClient(ws) {
   var thisOwClient = {
-    ws
+    ws,
+    sendMapState: (offset, length) => {
+      length = length || ((world.height * world.width) - offset);
+      const MaxSquaresPerMessage = 50;
+      var targetOffset = offset + length;
+      var curOffset = offset;
+      while (curOffset < targetOffset) {
+        var thisChunkLength = Math.min(MaxSquaresPerMessage, targetOffset - curOffset);
+        var squares = getWorldSquares(curOffset, thisChunkLength);
+        ws.send(JSON.stringify({
+          type: 'overwatch-update',
+          squares
+        }));
+        curOffset += thisChunkLength;
+      };     
+    }
   };
 
   overwatchClients.add(thisOwClient);
+  // send the initial state
+  ws.send(JSON.stringify(getWorldState(world)));
+  thisOwClient.sendMapState(0);
+  
+}
+
+function getWorldState(world) {
+  var r = { 
+    type: 'overwatch-init',
+    width: world.width,
+    height: world.height,
+  };
+  return r;
+}
+
+function getWorldSquares(skip, take) {
+  var count = 0;
+  var squares =  Array.from(world.iterateMap()).slice(skip, skip + take).map((worldSquare) => {
+          var sqInfo = { type: worldSquare.type };
+          if (count == 0) { // set x and y in the first object
+            sqInfo.position = worldSquare.position;
+          }
+          if (worldSquare.objects.size) {
+            // show players and chests here
+          }
+          return sqInfo;
+          count++;
+        });
+ return squares;
 }
 
 wss.on('connection', (ws) => {
   var deviceKey = ws.protocol;   // TODO: use to reconnect a client to an existing session
-  if (/$overwatch/.test(deviceKey)) {
+  if (/^overwatch/.test(deviceKey)) {
     createOverwatchClient(ws);
   } else {  // default to a player client
     createPlayerClient(ws);

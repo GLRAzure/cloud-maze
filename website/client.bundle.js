@@ -26032,7 +26032,7 @@ var app = new __WEBPACK_IMPORTED_MODULE_1_vue___default.a({
       body.scrollTop = body.scrollHeight;
     }
   }
-})
+});
 
 
 // accepts r, g, b or an arry of [r, g, b ]

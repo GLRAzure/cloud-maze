@@ -12,7 +12,7 @@
             "cwd": "${workspaceRoot}",
             "outFiles": [],
             "env": {
-                "debug": "mazeserver"
+                "DEBUG": "mazeserver"
             }
         },
         {
