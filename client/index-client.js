@@ -77,7 +77,8 @@ function mapSurroundingsValueToColor(char) {
   switch (char) {
     case ' ': return [0,0,0];
     case 'w': return [255,255,255];
-    case 'p': return [0,0,255];
+    case 'v': return [0,0,196];
+    case 'p': return [128,0,255];
     case 'c': return [0,255,0];
   }
 }
