@@ -9072,7 +9072,7 @@ class WorldRenderer {
                       this.context.beginPath();
                       var center = this.getBoxCenter(square.coords);
                       this.context.arc(center[0], center[1], this.squareSize / 3, 0, 2 * Math.PI, false);
-                      this.context.fillStyle = 'green';
+                      this.context.fillStyle = obj.color || 'white';
                       this.context.fill();
                       break;
                 }

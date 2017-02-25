@@ -33,23 +33,30 @@ var activeClients = new Map();
 
 var nextClientID = 1;
 
-function createPlayerClient(ws) {
-
+function createPlayerClient(ws, devicekKey) {
   var req = ws.request;
-  var thisClientId = nextClientID++;
-  debug('client connected, ID ', thisClientId);
-  var name = 'anonymous ' + thisClientId;
-  var client = {
-    ws,
-    name,    
-    player: world.addPlayer(name)
-  };
+  var client, name;
+  if (activeClients.has(devicekKey)) {
+    name = devicekKey;
+    debug('reconnecting client ', devicekKey);
+    client = activeClients.get(deviceKey);
+  } else {
+    var thisClientId = nextClientID++;
+    name = devicekKey || 'anonymous ' + thisClientId;
+    client = {
+      ws,
+      name,
+      player: world.addPlayer(name)
+    };  
+    client.player.color = getNextColor();
+    debug('new client connected ', name);
+  }
   
   client.sendMessage = function(body) {
     ws.send(JSON.stringify(body));
   }
 
-  activeClients.set(thisClientId, client);
+  activeClients.set(name, client);
   debug(activeClients.size, 'clients connected');
   // ws.send(JSON.stringify({message: 'Welcome! You are client ' + name }));
 
@@ -188,7 +195,7 @@ function toClientWorldSquare(worldSquare, includeCoords) {  // maps from the Gam
       worldSquare.objects.forEach(function (obj) {
         switch (obj.type) {
           case 'player': 
-            sqInfo.objects.push({ type: 'player', name: obj.name });
+           sqInfo.objects.push({ type: 'player', name: obj.name, color: obj.color });
             break;
         }
       });
@@ -201,7 +208,7 @@ wss.on('connection', (ws) => {
   if (/^overwatch/.test(deviceKey)) {
     createOverwatchClient(ws);
   } else {  // default to a player client
-    createPlayerClient(ws);
+    createPlayerClient(ws, deviceKey);
   }
 });
 
@@ -274,3 +281,11 @@ setInterval(() => {
   }
 }, 250);
 
+var colorPointer = 0;
+var colorList = ['#00FFFF','#0000FF','#A52A2A','#5F9EA0','#D2691E','#B8860B','#006400','#8B008B','#E9967A','#2F4F4F','#FF1493','#1E90FF','#ADFF2F',
+      '#F0E68C','#800000','#191970','#FF4500','#BC8F8F','#FFFF00','#D8BFD8','#708090','#9ACD32','#7B68EE','#8FBC8F','#DCDCDC','#ADD8E6','#90EE90'];
+function getNextColor() {
+  var color = colorList[colorPointer++];
+  colorPointer = colorPointer % colorList.length;  // wrap around
+  return color;
+}
