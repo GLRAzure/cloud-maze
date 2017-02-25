@@ -40,6 +40,7 @@ function createPlayerClient(ws, devicekKey) {
     name = devicekKey;
     debug('reconnecting client ', devicekKey);
     client = activeClients.get(deviceKey);
+    client.ws = ws;
   } else {
     var thisClientId = nextClientID++;
     name = devicekKey || 'anonymous ' + thisClientId;
@@ -48,6 +49,7 @@ function createPlayerClient(ws, devicekKey) {
       name,
       player: world.addPlayer(name)
     };  
+    activeClients.set(name, client);
     client.player.color = getNextColor();
     debug('new client connected ', name);
   }
@@ -56,7 +58,6 @@ function createPlayerClient(ws, devicekKey) {
     ws.send(JSON.stringify(body));
   }
 
-  activeClients.set(name, client);
   debug(activeClients.size, 'clients connected');
   // ws.send(JSON.stringify({message: 'Welcome! You are client ' + name }));
 
@@ -195,7 +196,7 @@ function toClientWorldSquare(worldSquare, includeCoords) {  // maps from the Gam
       worldSquare.objects.forEach(function (obj) {
         switch (obj.type) {
           case 'player': 
-           sqInfo.objects.push({ type: 'player', name: obj.name, color: obj.color });
+           sqInfo.objects.push({ type: 'player', name: obj.name, color: obj.color, away: obj.away });
             break;
         }
       });
@@ -257,6 +258,7 @@ setInterval(() => {
   activeClients.forEach(function (client, key) {
     // debug('handling world-update for ' + client.name);
     if (client.ws.readyState !== WebSocket.OPEN) { // client disconnected
+      client.player.away = true;
       return;
     }
     
@@ -270,9 +272,10 @@ setInterval(() => {
     };
     // surpress world updates if nothing has changed
     var worldUpdateMessageJson = JSON.stringify(worldUpdateMessage);
-    if (client.lastworldUpdateMessageJson !== worldUpdateMessageJson)
+    if (client.lastworldUpdateMessageJson !== worldUpdateMessageJson || (client.lastMessageTicks < (ticks - 40)))  // send a periodic update regardless
     {
       client.lastworldUpdateMessageJson = worldUpdateMessageJson;
+      client.lastMessageTicks = ticks;
       client.sendMessage(worldUpdateMessage);
     }
   });
