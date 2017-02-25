@@ -56,7 +56,8 @@ socket.addEventListener('message', function (event) {
         thisWorld.render = new WorldRenderer(thisWorld, worldCanvas);
         break;
       case 'overwatch-update':
-        thisWorld.loadSquares(message.squares);
+        if (message.squares) thisWorld.loadSquares(message.squares);
+        if (message.players) thisWorld.loadPlayers(message.players);
         thisWorld.render.redrawWorld();
         break;
     }
@@ -67,30 +68,35 @@ class WorldInfo {
       this.width = message.width;
       this.height = message.height;
       this.map = [];
+      this.players = [];
       var sqCounter = 0;    
     }
 
     loadSquares(squares) {
-        var thisCoords = [0,0];
-        for(var i in squares) {
-            var thisSq = squares[i];
-            if (thisSq.position) {
-                thisCoords = thisSq.position;
-                delete thisSq.position;
-            }
-            thisSq.coords = thisCoords;
-            console.log('loading square', thisCoords);
-            this.map[thisCoords[0]] = this.map[thisCoords[0]] || [];
-            this.map[thisCoords[0]][thisCoords[1]] = thisSq;
-
-            thisCoords[0]++;
-            if (thisCoords[0] >= this.width) { // move to the next row?
-                thisCoords[0] = 0;
-                thisCoords[1]++;
-                if (thisCoords[1] >= this.height) throw "moved past bottom of the map"
-            }
-          }
+    var thisCoords = [0,0];
+    for(var i in squares) {
+        var thisSq = squares[i];
+        if (thisSq.position) {
+            thisCoords = thisSq.position;
+            delete thisSq.position;
         }
+        thisSq.coords = [thisCoords[0],thisCoords[1]];
+        // console.log('loading square', thisCoords, thisSq);
+        this.map[thisCoords[0]] = this.map[thisCoords[0]] || [];
+        this.map[thisCoords[0]][thisCoords[1]] = thisSq;
+
+        thisCoords[0]++;
+        if (thisCoords[0] >= this.width) { // move to the next row?
+            thisCoords[0] = 0;
+            thisCoords[1]++;
+            if (thisCoords[1] >= this.height) throw "moved past bottom of the map"
+        }
+        }
+    }
+
+    loadPlayers(players) {
+        this.players = players; 
+    }
       
     update(message) {
 
@@ -129,6 +135,11 @@ class WorldRenderer {
         this.context.rect(x1, y1, this.squareSize, this.squareSize);
     }
 
+    getBoxCenter(coords) {  // map coords to center of canvas coords
+        return [(coords[0] * this.squareSize) + this.leftOffset + (this.squareSize / 2),
+                (coords[1] * this.squareSize) + this.topOffset + (this.squareSize / 2)];
+    }
+
     getStyle(square) {
         var style = {};
         style.stroke = "#404040";
@@ -153,6 +164,21 @@ class WorldRenderer {
         if (style.stroke) {
             this.context.strokeStyle = style.stroke;
             this.context.stroke();
+        }
+
+        if (square.objects) {
+            for(var i in square.objects) {
+                var obj = square.objects[i];
+                switch (obj.type) {
+                    case 'player':
+                      this.context.beginPath();
+                      var center = this.getBoxCenter(square.coords);
+                      this.context.arc(center[0], center[1], this.squareSize / 3, 0, 2 * Math.PI, false);
+                      this.context.fillStyle = 'green';
+                      this.context.fill();
+                      break;
+                }
+            }
         }
     }
 

@@ -9,6 +9,7 @@ const debug = require('debug')('gameworld');
 
 class MapSquare {
   constructor(world,x,y) {
+    this.type = 'square';
     this.world = world;
     this.position = [x, y];
     this.type = 'empty';
@@ -18,6 +19,7 @@ class MapSquare {
 
 class GamePlayer {
   constructor(world, name) {
+    this.type = 'player';
     this.world = world;
     this.name = name;
     this.actionQueue = [];   
@@ -31,8 +33,8 @@ class GamePlayer {
       Math.floor(Math.random() * this.world.width), // random placement
       Math.floor(Math.random() * this.world.height)];
       sq = this.world.getSquare(pos);
-    } while (sq.type != 'empty')
-    this.position = sq.position;
+    } while (sq.type != 'empty');
+    this.world.movePlayer(this, sq.position);    
   }
 
   get x() { return this.position[0]; }
@@ -118,12 +120,25 @@ class GameWorld {
     return ((coords[0] >= 0 && coords[0] < this.width) && (coords[1] >= 0 && coords[1] < this.height));
   }
 
-  *iterateMap() {
-    for (var y = 0; y < this.height; y++) {
-      for (var x = 0; x < this.width; x++) {
-        yield this.map[x][y];
-      }
+  *iterateMap(skip, take) {
+    var x = 0, y = 0;
+    if (skip) {
+      y = Math.floor(skip / this.width);
+      x = skip % this.width;
     }
+    var maxX = this.width - 1, maxY = this.height - 1;
+    if (take) {
+      maxX = x + take;
+      maxY = y + Math.floor(maxX / this.width);
+      maxX = maxX % this.width; 
+    }
+    while (x < maxX || y < maxY) {
+      yield this.map[x][y];
+      x++;
+      if (x >= this.width) { 
+        x = 0; y++;
+      }
+    }    
   }
 
   getSquare(coords) {
@@ -166,18 +181,24 @@ class GameWorld {
 
   movePlayer(player, direction) {
     var proposedPosition = player.position;
-
-    switch (direction) {
-      case 'north': proposedPosition = GameWorld.transformCoords(player.position, [ 0,-1]); break;
-      case 'south': proposedPosition = GameWorld.transformCoords(player.position, [ 0, 1]); break;
-      case 'west':  proposedPosition = GameWorld.transformCoords(player.position, [-1, 0]); break;
-      case 'east':  proposedPosition = GameWorld.transformCoords(player.position, [ 1, 0]); break;
+    if (Array.isArray(direction)) { // move to absolute position instead of direction
+      proposedPosition = direction;
+    } else {
+      switch (direction) {
+        case 'north': proposedPosition = GameWorld.transformCoords(player.position, [ 0,-1]); break;
+        case 'south': proposedPosition = GameWorld.transformCoords(player.position, [ 0, 1]); break;
+        case 'west':  proposedPosition = GameWorld.transformCoords(player.position, [-1, 0]); break;
+        case 'east':  proposedPosition = GameWorld.transformCoords(player.position, [ 1, 0]); break;
+      }
     }
     if (this.isInBounds(proposedPosition)) {
-        var oldSq = this.map.getByCoords(player.position);
+        var oldSq = player.position && this.map.getByCoords(player.position);
         var newSq = this.map.getByCoords(proposedPosition);
         if (newSq.type == 'wall') return;  // can't move into a wall
-        oldSq.objects.delete(player);
+        if (oldSq) {
+          oldSq.objects.delete(player);
+          oldSq.dirty = true;
+        }
         player.position = proposedPosition;
         newSq.objects.add(player);
     }

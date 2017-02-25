@@ -1,6 +1,7 @@
 /*jslint es6 */
 "use strict";
 const express = require('express');
+const _ = require('lodash');
 const app = express();
 const http = require('http');
 const WebSocket = require('ws');
@@ -29,7 +30,6 @@ const server = http.createServer(app);
 // Set up Sockets
 const wss = new WebSocket.Server({ server });
 var activeClients = new Map();
-var overwatchClients = new Set();
 
 var nextClientID = 1;
 
@@ -66,6 +66,7 @@ function createPlayerClient(ws) {
     switch(message.action) {
       case 'move':
         debug('player ' + name + ' moving ' + message.direction);
+        if (Array.isArray(message.direction)) break; // not allowed to jump to an arbirary position
         client.player.move(message.direction);
         break;
     }
@@ -76,6 +77,59 @@ function createPlayerClient(ws) {
       activeClients.delete(thisClientId);
   });
 }
+
+class Overwatch {
+  constructor (world) {
+    this.world = world;
+    this.clients = [];
+    this.squareState = [];  // a JSON string formatted representation of each square as we last sent it to overwatch
+    var index = 0;
+    // preload the state table with the starting state so we don't send everything right away
+    for(let worldSquare of this.world.iterateMap()) {
+      this.squareState[index] = JSON.stringify(toClientWorldSquare(worldSquare));
+      index++;
+    }
+  }
+
+  sendDirtySquares(limit) {  // limit = max number of squares to send in one message
+    var squares = this.world.iterateMap();
+    var dirtyList = [];
+    var squareIndex = 0;
+    // make a list of dirty squares by comparing prior state to new state
+    for (let worldSquare of squares) {
+      var clientSquare = toClientWorldSquare(worldSquare);
+      var clientSquareJson = JSON.stringify(clientSquare);
+      if (this.squareState[squareIndex] != clientSquareJson) {
+        dirtyList.push(worldSquare);
+        this.squareState[squareIndex] = clientSquareJson;
+        if (dirtyList.length >= limit) {
+          this.sendDirtyList(dirtyList);
+          dirtyList = [];
+        }
+      }
+      squareIndex++;
+    }
+    this.sendDirtyList(dirtyList);
+  }
+
+  sendDirtyList(dirtyList) {
+    if (!dirtyList.length) return; 
+    debug("%d dirty squares found, sending to overwatchers", dirtyList.length);
+    var clientSquareList = dirtyList.map((sq) => toClientWorldSquare(sq,true) );
+        var message = { 
+          type: 'overwatch-update',
+          squares: clientSquareList 
+        };
+        var messageString = JSON.stringify(message);
+        for(let c in this.clients) {
+          var client = this.clients[c];
+          client.ws.send(messageString);
+        }
+  }
+}
+
+
+var overwatch = new Overwatch(world);
 
 function createOverwatchClient(ws) {
   var thisOwClient = {
@@ -97,7 +151,7 @@ function createOverwatchClient(ws) {
     }
   };
 
-  overwatchClients.add(thisOwClient);
+  overwatch.clients.push(thisOwClient);
   // send the initial state
   ws.send(JSON.stringify(getWorldState(world)));
   thisOwClient.sendMapState(0);
@@ -114,19 +168,32 @@ function getWorldState(world) {
 }
 
 function getWorldSquares(skip, take) {
-  var count = 0;
-  var squares =  Array.from(world.iterateMap()).slice(skip, skip + take).map((worldSquare) => {
-          var sqInfo = { type: worldSquare.type };
-          if (count == 0) { // set x and y in the first object
-            sqInfo.position = worldSquare.position;
-          }
-          if (worldSquare.objects.size) {
-            // show players and chests here
-          }
-          return sqInfo;
-          count++;
-        });
- return squares;
+  if (Array.isArray(skip)) // coordinates were supplied
+  {
+    var skipArray = skip;
+    skip = (skipArray[1] * this.world.width) + skipArray[0];
+  }
+  take = take || 1;
+  var squareArray = Array.from(world.iterateMap(skip, take));
+  var output = squareArray.map(toClientWorldSquare);
+  output[0].position = squareArray[0].position; // put the position in the first square only 
+  return output;
+}
+
+function toClientWorldSquare(worldSquare, includeCoords) {  // maps from the GameWorldSquare format to the wire format we send the clients  
+    var sqInfo = { type: worldSquare.type };    
+    if (includeCoords) sqInfo.position = worldSquare.position;
+    if (worldSquare.objects.size) {
+      sqInfo.objects =  [];
+      worldSquare.objects.forEach(function (obj) {
+        switch (obj.type) {
+          case 'player': 
+            sqInfo.objects.push({ type: 'player', name: obj.name });
+            break;
+        }
+      });
+    }
+    return sqInfo;
 }
 
 wss.on('connection', (ws) => {
@@ -172,8 +239,10 @@ function buildSurroundingsMap(player, world) {
   }).join('');
 }
 
+var ticks = 0;
 // set up game timer
 setInterval(() => {
+  ticks++;
   var clientList = activeClients.values();
   // debug('game timer tick. clients connected: ' + activeClients.size);
   // broadcast({ message: 'game time: ' + world.time});
@@ -200,5 +269,8 @@ setInterval(() => {
       client.sendMessage(worldUpdateMessage);
     }
   });
+  if ((ticks % 1) == 0) {
+    overwatch.sendDirtySquares(25);
+  }
 }, 250);
 
