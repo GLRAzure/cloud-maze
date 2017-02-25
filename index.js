@@ -261,6 +261,7 @@ setInterval(() => {
       client.player.away = true;
       return;
     }
+    delete client.player.away;
     
     var worldUpdateMessage = {
       type: 'world-update',
