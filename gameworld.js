@@ -166,9 +166,10 @@ class GameWorld {
     }
     if (this.isInBounds(proposedPosition)) {
         var oldSq = this.map.getByCoords(player.position);
+        var newSq = this.map.getByCoords(proposedPosition);
+        if (newSq.type == 'wall') return;  // can't move into a wall
         oldSq.objects.delete(player);
         player.position = proposedPosition;
-        var newSq = this.map.getByCoords(player.position);
         newSq.objects.add(player);
     }
   }
