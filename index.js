@@ -33,17 +33,17 @@ var activeClients = new Map();
 
 var nextClientID = 1;
 
-function createPlayerClient(ws, devicekKey) {
+function createPlayerClient(ws, deviceKey) {
   var req = ws.request;
   var client, name;
-  if (activeClients.has(devicekKey)) {
-    name = devicekKey;
-    debug('reconnecting client ', devicekKey);
+  if (activeClients.has(deviceKey)) {
+    name = deviceKey;
+    debug('reconnecting client ', deviceKey);
     client = activeClients.get(deviceKey);
     client.ws = ws;
   } else {
     var thisClientId = nextClientID++;
-    name = devicekKey || 'anonymous ' + thisClientId;
+    name = deviceKey || 'anonymous ' + thisClientId;
     client = {
       ws,
       name,
@@ -131,7 +131,11 @@ class Overwatch {
         var messageString = JSON.stringify(message);
         for(let c in this.clients) {
           var client = this.clients[c];
-          client.ws.send(messageString);
+ if (client.ws.readyState == WebSocket.OPEN) { // client disconnected
+        client.ws.send(messageString);
+      }
+
+       //   client.ws.send(messageString);
         }
   }
 }
