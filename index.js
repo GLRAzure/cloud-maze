@@ -165,6 +165,8 @@ function buildSurroundingsMap(player, world) {
     var worldMapSquare = world.getWorldSquare(thisMapCoord);
     if (worldMapSquare == null) { // not a valid map coordiate position, probably outside borders
       return 'w'; // wall (outside border)
+    } else if (worldMapSquare.type == 'wall') {
+      return 'w';
     }
     return ' '; // space = empty
   }).join('');
