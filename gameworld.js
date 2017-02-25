@@ -23,6 +23,7 @@ class GamePlayer {
     this.world = world;
     this.name = name;
     this.actionQueue = [];   
+    this.visitedSquares = new Set();
     this.randomlyPlace(); 
   }
 
@@ -201,6 +202,7 @@ class GameWorld {
         }
         player.position = proposedPosition;
         newSq.objects.add(player);
+        player.visitedSquares.add(newSq);
     }
   }
 
