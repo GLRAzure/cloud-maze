@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import { fabric } from 'fabric';
 
 // var app = new Vue({
 //   el: '#app',
@@ -13,12 +12,6 @@ import { fabric } from 'fabric';
 
 var worldCanvas = document.querySelector('#mapCanvas');
 
-// var canvas = new fabric.Canvas('mapCanvas', {
-//   backgroundColor: 'rgb(60,60,60)',
-//   selectionColor: 'blue',
-//   selectionLineWidth: 2,
-//   selection: false
-// });
 
 function resizeCanvas() {
     var container = document.querySelector(".topPanel");
@@ -27,20 +20,6 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
-
-// resizeCanvas();
-
-// // create a rectangle object
-// var rect = new fabric.Rect({
-//   left: 100,
-//   top: 100,
-//   fill: 'red',
-//   width: 20,
-//   height: 20
-// });
-
-// "add" rectangle onto canvas
-// canvas.add(rect);
 
 var thisWorld = null;
 
