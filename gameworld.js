@@ -1,5 +1,6 @@
 "use strict";
-const debug = require('debug')('gameworld');
+
+const { debug, info, error } = require('winston');
 /*
   Map coordinates are specified in a two-int array, x, y. So [4, 3] is x=4, y=3. Various places may have
   shortcut methods that expose x and y values that map to/from these structures.

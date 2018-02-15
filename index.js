@@ -219,6 +219,7 @@ function toClientWorldSquare(worldSquare, includeCoords) {  // maps from the Gam
 
 wss.on('connection', (ws) => {
   var deviceKey = ws.protocol;   // TODO: use to reconnect a client to an existing session
+  debug(`Client connected`);
   if (/^overwatch/.test(deviceKey)) {
     createOverwatchClient(ws);
   } else {  // default to a player client
