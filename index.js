@@ -7,7 +7,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 const winston = require('winston');   
-const { debug, info, error } = winston;
+const { debug, info, error, warn } = winston;
 // set Debug env variable to * or mazeserver to see messages
 // powershell: $Env:debug = "mazeserver"
 const cfg = require('./config.json');
@@ -17,7 +17,7 @@ winston.cli();
 winston.level = "debug";
 
 process.title = 'cloud-maze'
-debug("starting cloud-maze");
+info("starting cloud-maze");
 
 const args = process.argv.slice(2);
 
@@ -49,7 +49,7 @@ function createPlayerClient(ws, deviceKey) {
   var client, name;
   if (activeClients.has(deviceKey)) {
     name = deviceKey;
-    debug('reconnecting client ', deviceKey);
+    info('reconnecting client ', deviceKey);
     client = activeClients.get(deviceKey);
     client.ws = ws;
   } else {
@@ -62,29 +62,29 @@ function createPlayerClient(ws, deviceKey) {
     };  
     activeClients.set(name, client);
     client.player.color = getNextColor();
-    debug('new client connected ', name);
+    info('new client connected ', name);
   }
   
   client.sendMessage = function(body) {
     ws.send(JSON.stringify(body));
   }
 
-  debug(activeClients.size, 'clients connected');
+  info(activeClients.size, 'clients connected');
   // ws.send(JSON.stringify({message: 'Welcome! You are client ' + name }));
 
   ws.on('message', function incoming(messageText) {
-    debug("received from client '%s': %s", name, messageText);
+    info("received from client '%s': %s", name, messageText);
     var message;
     try {
       message = JSON.parse(messageText);
     }
     catch (err) {
-      debug("unrecognized/non-JSON message from client '%s': '%s' ", name, messageText);
+      info("unrecognized/non-JSON message from client '%s': '%s' ", name, messageText);
 
     }
     switch(message.action) {
       case 'move':
-        debug('player ' + name + ' moving ' + message.direction);
+        info('player ' + name + ' moving ' + message.direction);
         if (Array.isArray(message.direction)) break; // not allowed to jump to an arbirary position
         client.player.move(message.direction);
         break;
@@ -92,9 +92,13 @@ function createPlayerClient(ws, deviceKey) {
   });
 
   ws.on('disconnect', () => {
-      debug('client %d disconnected', thisClientId);
+      info('client %d disconnected', thisClientId);
       activeClients.delete(thisClientId);
   });
+
+  ws.on('error', (err) => {
+    error(`Error on client socket`, err);
+  })
 }
 
 class Overwatch {
@@ -133,7 +137,7 @@ class Overwatch {
 
   sendDirtyList(dirtyList) {
     if (!dirtyList.length) return; 
-    debug("%d dirty squares found, sending to overwatchers", dirtyList.length);
+    info(`${ dirtyList.length } dirty squares found, sending to overwatchers`);
     var clientSquareList = dirtyList.map((sq) => toClientWorldSquare(sq,true) );
     var message = { 
       type: 'overwatch-update',
@@ -141,11 +145,19 @@ class Overwatch {
     };    
     var messageString = JSON.stringify(message);
     for(let c in this.clients) {
-      var client = this.clients[c];      
+      var client = this.clients[c];
+      debug(`Sending update to client`, c);
       if (client.ws.readyState == WebSocket.OPEN) { // client disconnected
-        client.ws.send(messageString);
+        try {
+          client.ws.send(messageString);
+        }
+        catch (ex)
+        {
+          warn(`error writing update to overwatch client; Error: ${ex}`);
+        }
       }
-    }
+    }    
+    info(`Done updating overwatchers`);
   }
 }
 
@@ -176,7 +188,15 @@ function createOverwatchClient(ws) {
   // send the initial state
   ws.send(JSON.stringify(getWorldState(world)));
   thisOwClient.sendMapState(0);
+
+  ws.on('error', (err) => {
+    error(`Error on overwatch client socket`, err);
+  })
   
+  ws.on('disconnect', () => {
+    info(`Overwatch client disconnected`);
+    _.pull(overwatch.clients, thisOwClient);  
+  })
 }
 
 function getWorldState(world) {
@@ -219,7 +239,7 @@ function toClientWorldSquare(worldSquare, includeCoords) {  // maps from the Gam
 
 wss.on('connection', (ws) => {
   var deviceKey = ws.protocol;   // TODO: use to reconnect a client to an existing session
-  debug(`Client connected`);
+  info(`Client connected`);
   if (/^overwatch/.test(deviceKey)) {
     createOverwatchClient(ws);
   } else {  // default to a player client
@@ -227,10 +247,13 @@ wss.on('connection', (ws) => {
   }
 });
 
+wss.on('error', (err) => {
+  error(`Error on socket server`, err);
+})
 
-debug('Starting up on port %d', config.port);
+info('Starting up on port %d', config.port);
 server.listen(config.port, function listening() {
-  debug('Listening on %d', server.address().port);
+  info('Listening on %d', server.address().port);
 });
 
 // send a message to all clients
@@ -270,11 +293,11 @@ var ticks = 0;
 setInterval(() => {
   ticks++;
   var clientList = activeClients.values();
-  // debug('game timer tick. clients connected: ' + activeClients.size);
+  // info('game timer tick. clients connected: ' + activeClients.size);
   // broadcast({ message: 'game time: ' + world.time});
   world.tick();
   activeClients.forEach(function (client, key) {
-    // debug('handling world-update for ' + client.name);
+    // info('handling world-update for ' + client.name);
     if (client.ws.readyState !== WebSocket.OPEN) { // client disconnected
       client.player.away = true;
       return;

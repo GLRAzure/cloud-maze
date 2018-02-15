@@ -1,6 +1,6 @@
 "use strict";
 
-const { debug, info, error } = require('winston');
+const { debug, info, error, silly } = require('winston');
 /*
   Map coordinates are specified in a two-int array, x, y. So [4, 3] is x=4, y=3. Various places may have
   shortcut methods that expose x and y values that map to/from these structures.
@@ -80,7 +80,7 @@ class DefaultLayoutBuilder {
     var startingCoords = [Math.floor(Math.random() * this.world.width), Math.floor(Math.random() * this.world.height)];
     var thisSq =  this.world.getSquare(startingCoords);
     while ((visisted.size < (this.world.width * this.world.height)) && thisSq) {
-      debug('visiting square ', thisSq.position );
+      silly('visiting square ', thisSq.position );
       thisSq.type = 'empty';
       visisted.add(thisSq);
       var neighbors = this.neighborList(thisSq);
