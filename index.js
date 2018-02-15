@@ -124,21 +124,6 @@ class Overwatch {
     if (!dirtyList.length) return; 
     debug("%d dirty squares found, sending to overwatchers", dirtyList.length);
     var clientSquareList = dirtyList.map((sq) => toClientWorldSquare(sq,true) );
-<<<<<<< HEAD
-        var message = { 
-          type: 'overwatch-update',
-          squares: clientSquareList 
-        };
-        var messageString = JSON.stringify(message);
-        for(let c in this.clients) {
-          var client = this.clients[c];
- if (client.ws.readyState == WebSocket.OPEN) { // client disconnected
-        client.ws.send(messageString);
-      }
-
-       //   client.ws.send(messageString);
-        }
-=======
     var message = { 
       type: 'overwatch-update',
       squares: clientSquareList 
@@ -150,7 +135,6 @@ class Overwatch {
         client.ws.send(messageString);
       }
     }
->>>>>>> 265c42ffbe0eea5bfd44a1966ba8779399b779ea
   }
 }
 
