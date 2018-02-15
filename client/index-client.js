@@ -1,7 +1,6 @@
 "use strict";
 import _ from 'lodash';
 import Vue from 'vue';
-import mazecommon from '../mazecommon.js';
 
 const NumLeds = 9;
 const BytesPerLed = 3;

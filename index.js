@@ -6,18 +6,29 @@ const app = express();
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-const debug = require('debug')('mazeserver');   
+const winston = require('winston');   
+const { debug, info, error } = winston;
 // set Debug env variable to * or mazeserver to see messages
 // powershell: $Env:debug = "mazeserver"
 const cfg = require('./config.json');
-const mazeCommon = require('./mazecommon');
 const { GameWorld } = require('./gameworld.js');
 
+winston.cli();
+winston.level = "debug";
+
 process.title = 'cloud-maze'
+debug("starting cloud-maze");
 
-const port = process.env.CLOUDMAZE_PORT || process.env.PORT || 3001;
+const args = process.argv.slice(2);
 
-var world = new GameWorld(64, 32);
+const config = {
+  gameworld: {
+    size: [64, 32]
+  },
+  port: process.env.CLOUDMAZE_PORT || process.env.PORT || args[0] || 3001
+}
+
+var world = new GameWorld(config.gameworld.size[0], config.gameworld.size[1]);
 
 // set up webserver
 app.get('/', function(req, res){
@@ -215,7 +226,9 @@ wss.on('connection', (ws) => {
   }
 });
 
-server.listen(port, function listening() {
+
+debug('Starting up on port %d', config.port);
+server.listen(config.port, function listening() {
   debug('Listening on %d', server.address().port);
 });
 
